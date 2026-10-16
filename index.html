@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tipping Point: where does Jev pull the lever?</title>
+    <meta name="description" content="Change one thing in a trolley problem, ask Jev every time, and see the exact point where it changes its mind. Pays with your own Pollen.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="top">
+        <a class="brand" href="./">Tipping Point</a>
+        <div class="session">
+            <span id="whoami" hidden>Signed in with your Pollen</span>
+            <button id="sign-in" class="button primary" type="button">Sign in with Pollen</button>
+            <button id="sign-out" class="button" type="button" hidden>Sign out</button>
+        </div>
+    </header>
+
+    <main>
+        <section class="intro">
+            <h1>Where does Jev pull the lever?</h1>
+            <p>
+                Jev is a decision model: it answers with a choice and how likely it is, not with prose.
+                Change one thing in a trolley problem, ask it every time, and watch the probability move.
+                Say where <em>you</em> would tip first, then see where Jev does.
+            </p>
+        </section>
+
+        <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+        <nav id="tabs" class="tabs" aria-label="Dilemmas"></nav>
+
+        <section id="stage" class="stage" aria-live="polite"></section>
+
+        <p class="fine">
+            Inspired by Zach Landes' <a href="https://zachlandes.com/trolley-problem/">Jev Meets the Trolley Problem</a>.
+            Every answer comes from <a href="https://pollinations.ai/?ref=badge">Pollinations</a>; you pay with your own Pollen,
+            and this page has no server and keeps no key. Jev is a paid-only model, so the account that signs in needs paid Pollen.
+        </p>
+        <p class="fine">
+            <a href="https://pollinations.ai/?ref=badge"><img alt="Made with pollinations.ai" height="20" src="https://raw.githubusercontent.com/pollinations/pollinations/main/packages/ui/src/brand/badge-made-with.svg"></a>
+        </p>
+    </main>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
