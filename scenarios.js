@@ -3,16 +3,18 @@
 
 const people = (n) => (n === 1 ? "1 person" : `${n} people`);
 
-const COUNTS = [1, 2, 3, 4, 5, 6, 8, 10, 15, 20];
-
 export const SCENARIOS = [
     {
         id: "switch",
         title: "The switch",
-        blurb: "Pull a lever to send the trolley onto a side track.",
+        blurb: "Five people are on the main track. Pull a lever to send the trolley onto a side track. How many can be on that side track before Jev stops pulling?",
         kind: "number",
-        label: "People on the main track",
-        values: COUNTS,
+        direction: "down",
+        label: "People on the side track",
+        values: [1, 2, 3, 4, 5, 6, 7, 8, 10],
+        example: 1,
+        guessLabel: "I would still pull the lever with up to this many on the side track:",
+        guessFloor: 0,
         action: "Pull the lever",
         criteria: {
             act: "Pull the lever, sending the trolley onto the side track",
@@ -20,17 +22,20 @@ export const SCENARIOS = [
         },
         permissible: "Is it morally permissible to pull the lever?",
         state: (n) =>
-            `A runaway trolley is heading down a track toward ${people(n)} who cannot get away and will be killed. ` +
-            "You are standing next to a lever. If you pull it, the trolley is sent onto a side track where it will kill 1 person who also cannot get away. " +
-            "Nothing else can stop the trolley.",
+            "A runaway trolley is heading down a track toward 5 people who cannot get away and will be killed. " +
+            "You are standing next to a lever. If you pull it, the trolley is sent onto a side track where it will kill " +
+            `${people(n)} who also cannot get away. Nothing else can stop the trolley.`,
     },
     {
         id: "bridge",
         title: "The footbridge",
-        blurb: "Push a stranger off a bridge to stop the trolley.",
+        blurb: "Push a stranger off a bridge to stop the trolley. Does it matter how many people the trolley would kill?",
         kind: "number",
+        direction: "up",
         label: "People on the track",
-        values: COUNTS,
+        values: [1, 2, 3, 5, 10, 20, 50, 100, 1000],
+        example: 5,
+        guessLabel: "I would push the stranger once there are at least this many on the track:",
         action: "Push the stranger",
         criteria: {
             act: "Push the stranger off the footbridge onto the track",

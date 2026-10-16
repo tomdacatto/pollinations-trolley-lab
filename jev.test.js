@@ -10,15 +10,17 @@ test("buildRequest asks the same two questions at every setting and changes only
     const b = buildRequest(swtch, 12);
     assert.deepEqual(a.questions, b.questions);
     assert.notEqual(a.state, b.state);
-    assert.match(a.state, /toward 2 people/);
-    assert.match(b.state, /toward 12 people/);
+    assert.match(a.state, /kill 2 people/);
+    assert.match(b.state, /kill 12 people/);
+    assert.match(a.state, /toward 5 people/);
+    assert.match(b.state, /toward 5 people/);
     assert.equal(a.questions.decision.type, "choice");
     assert.deepEqual(Object.keys(a.questions.decision.criteria), ["act", "stay"]);
     assert.equal(a.questions.permissible.type, "noul");
 });
 
 test("a single person is not 'people'", () => {
-    assert.match(buildRequest(swtch, 1).state, /toward 1 person who/);
+    assert.match(buildRequest(swtch, 1).state, /kill 1 person who/);
     assert.match(buildRequest(bridge, 1).state, /the person on the track will live/);
     assert.match(buildRequest(bridge, 5).state, /the people on the track will live/);
 });
@@ -55,29 +57,43 @@ test("tippingPoint interpolates between the two settings that straddle 50%", () 
         { x: 5, p: 0.7 },
         { x: 10, p: 0.9 },
     ]);
-    assert.equal(tip.kind, "crosses");
-    assert.equal(tip.x, 4);
+    assert.deepEqual(tip, { kind: "crosses", direction: "up", x: 4 });
 });
 
-test("tippingPoint is exact when a setting lands on 50%, and sorts its input", () => {
+test("tippingPoint finds a curve that falls through 50%, and sorts its input", () => {
     const tip = tippingPoint([
-        { x: 6, p: 0.9 },
-        { x: 2, p: 0.2 },
-        { x: 4, p: 0.5 },
+        { x: 5, p: 0.2 },
+        { x: 1, p: 0.99 },
+        { x: 4, p: 0.97 },
     ]);
-    assert.deepEqual(tip, { kind: "crosses", x: 4 });
+    assert.equal(tip.kind, "crosses");
+    assert.equal(tip.direction, "down");
+    assert.ok(tip.x > 4 && tip.x < 5, String(tip.x));
+    assert.equal(Math.round(tip.x * 100) / 100, 4.61);
 });
 
-test("tippingPoint reports a curve that never starts low or never gets there", () => {
-    assert.deepEqual(tippingPoint([{ x: 1, p: 0.8 }, { x: 5, p: 0.95 }]), { kind: "always", x: 1 });
-    assert.deepEqual(tippingPoint([{ x: 1, p: 0.1 }, { x: 5, p: 0.45 }]), { kind: "never", x: 5 });
+test("tippingPoint is exact when a setting lands on 50%", () => {
+    assert.deepEqual(
+        tippingPoint([
+            { x: 2, p: 0.2 },
+            { x: 4, p: 0.5 },
+            { x: 6, p: 0.9 },
+        ]),
+        { kind: "crosses", direction: "up", x: 4 },
+    );
+});
+
+test("tippingPoint reports a curve that stays on one side of 50%", () => {
+    assert.deepEqual(tippingPoint([{ x: 1, p: 0.8 }, { x: 5, p: 0.95 }]), { kind: "above" });
+    assert.deepEqual(tippingPoint([{ x: 1, p: 0.1 }, { x: 5, p: 0.45 }]), { kind: "below" });
     assert.equal(tippingPoint([]), null);
 });
 
 test("describeTipping puts each outcome in words", () => {
-    assert.equal(describeTipping({ kind: "crosses", x: 3.04 }), "around 3");
-    assert.equal(describeTipping({ kind: "always", x: 1 }), "already at 1");
-    assert.equal(describeTipping({ kind: "never", x: 20 }), "never, even at 20");
+    assert.equal(describeTipping({ kind: "crosses", direction: "up", x: 3.04 }), "starts to act around 3");
+    assert.equal(describeTipping({ kind: "crosses", direction: "down", x: 4.61 }), "stops acting around 4.6");
+    assert.equal(describeTipping({ kind: "above" }), "acts at every setting tested");
+    assert.equal(describeTipping({ kind: "below" }), "never reaches 50% at any setting tested");
     assert.equal(describeTipping(null), "no answer yet");
 });
 

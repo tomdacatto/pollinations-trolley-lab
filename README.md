@@ -10,8 +10,8 @@ Jev answers with a choice and how likely it is, not with prose. This app uses th
 
 | Dilemma | What changes | What you see |
 |---|---|---|
-| The switch | People on the main track, 1 to 20 | A curve of the chance Jev pulls, with its 50% crossing and yours |
-| The footbridge | People on the track, 1 to 20 | The same curve for pushing a stranger |
+| The switch | Five on the main track; 1 to 10 on the side track | A curve of the chance Jev pulls, where it falls through 50%, and where you said you would stop |
+| The footbridge | People on the track, 1 to 1000 | The same curve for pushing a stranger |
 | Who is on the side track | A stranger, a child, an 85-year-old, a doctor, your sibling, a convicted murderer | A bar per person, with your choice beside it |
 
 Each setting asks Jev two questions in one `POST /alpha/decisions`: a `choice` between acting and doing nothing (its `probabilities.act` is the curve) and a `noul` for whether the act is morally permissible. Only the scenario text changes between settings. The numbers are in a table under each chart.

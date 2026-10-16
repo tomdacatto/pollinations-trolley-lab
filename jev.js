@@ -35,21 +35,24 @@ export function readAnswers(response) {
     return { act, confidence: decision.confidence, permissible: permissible.noul };
 }
 
-// Where the curve first reaches 50% going left to right, found by straight-line
-// interpolation between the two settings it falls between. `x` is the setting's
-// position; `always` means it is already at or above 50% at the first setting,
-// `never` means it never gets there.
+// Where the curve first crosses 50%, going left to right, found by straight-line
+// interpolation between the two settings it falls between. `direction` is "up"
+// when Jev starts to act as the setting grows and "down" when it stops acting.
+// `above` / `below` mean it never crosses: at least / under 50% at every setting.
 export function tippingPoint(points, level = 0.5) {
     const sorted = [...points].sort((a, b) => a.x - b.x);
     if (sorted.length === 0) return null;
-    if (sorted[0].p >= level) return { kind: "always", x: sorted[0].x };
     for (let i = 1; i < sorted.length; i++) {
         const [a, b] = [sorted[i - 1], sorted[i]];
-        if (b.p >= level) {
-            return { kind: "crosses", x: a.x + ((level - a.p) * (b.x - a.x)) / (b.p - a.p) };
+        if (a.p < level !== b.p < level) {
+            return {
+                kind: "crosses",
+                direction: b.p > a.p ? "up" : "down",
+                x: a.x + ((level - a.p) * (b.x - a.x)) / (b.p - a.p),
+            };
         }
     }
-    return { kind: "never", x: sorted.at(-1).x };
+    return { kind: sorted[0].p >= level ? "above" : "below" };
 }
 
 // Asks about every setting, `concurrency` at a time, and reports each answer as
@@ -72,9 +75,11 @@ export async function runSweep(scenario, ask, { concurrency = 4, onResult = () =
     if (failure) throw failure;
 }
 
-export function describeTipping(tip) {
+const round = (x) => Math.round(x * 10) / 10;
+
+export function describeTipping(tip, action = "acts") {
     if (!tip) return "no answer yet";
-    if (tip.kind === "never") return `never, even at ${tip.x}`;
-    if (tip.kind === "always") return `already at ${tip.x}`;
-    return `around ${Math.round(tip.x * 10) / 10}`;
+    if (tip.kind === "above") return `${action} at every setting tested`;
+    if (tip.kind === "below") return `never reaches 50% at any setting tested`;
+    return tip.direction === "up" ? `starts to act around ${round(tip.x)}` : `stops acting around ${round(tip.x)}`;
 }

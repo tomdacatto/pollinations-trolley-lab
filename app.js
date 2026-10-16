@@ -67,7 +67,7 @@ function renderTabs() {
     );
 }
 
-const exampleSetting = (scenario) => (scenario.kind === "number" ? 5 : scenario.values[0]);
+const exampleSetting = (scenario) => (scenario.kind === "number" ? scenario.example : scenario.values[0]);
 
 function renderGuess(scenario) {
     const box = el("div", { className: "guess" });
@@ -75,19 +75,20 @@ function renderGuess(scenario) {
         const select = el("select", { id: "guess" });
         select.dataset.focus = "guess";
         select.append(el("option", { value: "", textContent: "choose…", disabled: true, selected: !guesses.has(scenario.id) }));
-        for (const n of scenario.values) {
-            select.append(el("option", { value: String(n), textContent: String(n), selected: guesses.get(scenario.id) === n }));
+        const options = scenario.direction === "down" ? [scenario.guessFloor, ...scenario.values] : scenario.values;
+        for (const n of options) {
+            const label = scenario.direction === "down" && n === scenario.guessFloor ? "0 (I would not pull)" : String(n);
+            select.append(el("option", { value: String(n), textContent: label, selected: guesses.get(scenario.id) === n }));
         }
-        select.append(el("option", { value: NEVER, textContent: "never", selected: guesses.get(scenario.id) === NEVER }));
+        if (scenario.direction === "up") {
+            select.append(el("option", { value: NEVER, textContent: "never", selected: guesses.get(scenario.id) === NEVER }));
+        }
         select.addEventListener("change", () => {
             guesses.set(scenario.id, select.value === NEVER ? NEVER : Number(select.value));
             rememberGuesses();
             renderStage();
         });
-        box.append(
-            el("label", { htmlFor: "guess", textContent: `${scenario.action} once there are at least this many:` }),
-            select,
-        );
+        box.append(el("label", { htmlFor: "guess", textContent: scenario.guessLabel }), select);
         return box;
     }
     const picked = guesses.get(scenario.id) ?? new Set();
@@ -117,13 +118,25 @@ function pointsOf(scenario) {
     return scenario.values.filter((v) => results.has(keyOf(v))).map((v) => ({ x: v, p: results.get(v).act }));
 }
 
-function renderCurve(scenario, results) {
+// Where the user's guess sits on the axis, in the setting's own units.
+function guessX(scenario, guess) {
+    if (typeof guess !== "number") return null;
+    return scenario.direction === "down" ? guess + 0.5 : guess;
+}
+
+function renderCurve(scenario) {
     const W = 640;
     const H = 300;
     const m = { l: 44, r: 16, t: 16, b: 42 };
     const xs = scenario.values;
-    const [x0, x1] = [xs[0], xs.at(-1)];
-    const sx = (x) => m.l + ((x - x0) / (x1 - x0)) * (W - m.l - m.r);
+    // Settings are spaced evenly, so 1, 2, 3 … 1000 stay readable; a value between two
+    // settings (a crossing, or a guess) is placed by interpolating between them.
+    const index = (x) => {
+        const i = Math.max(0, xs.findLastIndex((v) => v <= x));
+        if (i >= xs.length - 1) return xs.length - 1;
+        return i + Math.max(0, (x - xs[i]) / (xs[i + 1] - xs[i]));
+    };
+    const sx = (x) => m.l + (index(x) / (xs.length - 1)) * (W - m.l - m.r);
     const sy = (p) => m.t + (1 - p) * (H - m.t - m.b);
     const chart = svg("svg", { class: "chart", viewBox: `0 0 ${W} ${H}`, role: "img" });
     chart.setAttribute("aria-label", `Probability that Jev would ${scenario.action.toLowerCase()}, by ${scenario.label.toLowerCase()}.`);
@@ -136,10 +149,10 @@ function renderCurve(scenario, results) {
     chart.append(svg("text", { x: (m.l + W - m.r) / 2, y: H - 4, "text-anchor": "middle" }, scenario.label));
 
     const points = pointsOf(scenario);
-    const guess = guesses.get(scenario.id);
-    if (typeof guess === "number") {
-        chart.append(svg("line", { class: "mark-you", x1: sx(guess), x2: sx(guess), y1: m.t, y2: H - m.b }));
-        chart.append(svg("text", { class: "label-you", x: sx(guess) + 4, y: m.t + 12 }, "you"));
+    const mine = guessX(scenario, guesses.get(scenario.id));
+    if (mine !== null) {
+        chart.append(svg("line", { class: "mark-you", x1: sx(mine), x2: sx(mine), y1: m.t, y2: H - m.b }));
+        chart.append(svg("text", { class: "label-you", x: sx(mine) + 4, y: m.t + 12 }, "you"));
     }
     if (points.length > 1) {
         chart.append(svg("polyline", { class: "curve", points: points.map((pt) => `${sx(pt.x)},${sy(pt.p)}`).join(" ") }));
@@ -190,12 +203,16 @@ function verdictFor(scenario, results) {
         return `You and Jev agree on ${same} of ${scenario.values.length} people on the side track.`;
     }
     const tip = tippingPoint(pointsOf(scenario));
-    const jev = describeTipping(tip);
-    const you = guess === NEVER ? "never" : `at ${guess}`;
-    if (tip.kind !== "crosses" || guess === NEVER) return `Jev: ${jev}. You: ${you}.`;
-    const gap = Math.round((tip.x - guess) * 10) / 10;
-    if (Math.abs(gap) < 0.5) return `Jev tips ${jev}; you tip ${you}. Practically the same place.`;
-    return `Jev tips ${jev}; you tip ${you}. Jev needs ${Math.abs(gap)} ${gap > 0 ? "more" : "fewer"} than you.`;
+    const down = scenario.direction === "down";
+    const you =
+        guess === NEVER || (down && guess === scenario.guessFloor)
+            ? `would not ${scenario.action.toLowerCase()} at any of these`
+            : down
+              ? `would ${scenario.action.toLowerCase()} with up to ${guess}`
+              : `would ${scenario.action.toLowerCase()} from ${guess}`;
+    const mine = guessX(scenario, guess);
+    const close = tip.kind === "crosses" && mine !== null && Math.abs(tip.x - mine) < 0.75;
+    return `Jev ${describeTipping(tip)}. You ${you}.${close ? " That is almost the same place." : ""}`;
 }
 
 function tableOf(scenario, results) {
@@ -274,7 +291,7 @@ function drawStage() {
         ...(busy ? [el("p", { className: "progress", textContent: `Asked Jev ${results.size} of ${running.total}…` })] : []),
         ...(results.size
             ? [
-                  scenario.kind === "number" ? renderCurve(scenario, results) : renderBars(scenario, results),
+                  scenario.kind === "number" ? renderCurve(scenario) : renderBars(scenario, results),
                   el(
                       "div",
                       { className: "legend" },
