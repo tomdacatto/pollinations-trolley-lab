@@ -16,6 +16,18 @@ Jev answers with a choice and how likely it is, not with prose. This app uses th
 
 Each setting asks Jev two questions in one `POST /alpha/decisions`: a `choice` between acting and doing nothing (its `probabilities.act` is the curve) and a `noul` for whether the act is morally permissible. Only the scenario text changes between settings. The numbers are in a table under each chart.
 
+## A real run
+
+Signed in with Bring Your Own Pollen on the live page, three sweeps (about 25 Jev calls):
+
+- **The switch:** with 5 on the main track, Jev is above 97% up to 4 on the side track and falls to 20% at 5 and 1% at 6. It stops pulling around 4.6, the same place the person who guessed "up to 4" tipped.
+- **The footbridge:** the chance Jev pushes the stranger sits between 27% and 46% from 1 person to 1000 and never reaches 50%.
+- **Who is on the side track:** Jev would pull for all six, from 98% for a convicted murderer to 72% for a doctor.
+
+![The switch: Jev's chance of pulling falls through 50% at 4.6](docs/switch.jpg)
+![The footbridge: a flat curve that never reaches 50%](docs/footbridge.jpg)
+![Who is on the side track](docs/who.jpg)
+
 ## How it pays
 
 There is no server and no key in this repository. The visitor signs in on enter.pollinations.ai ([Bring Your Own Pollen](https://github.com/pollinations/pollinations/blob/main/BRING_YOUR_OWN_POLLEN.md), fragment flow), the key comes back in the URL fragment, is removed from the address bar and is kept in `sessionStorage` for that tab only. The sign-in asks for a 0.1 Pollen budget and one day. A full sweep is about ten Jev calls and costs a few thousandths of a Pollen. Jev is a paid-only model, so the account needs paid Pollen.
