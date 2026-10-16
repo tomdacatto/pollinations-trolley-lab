@@ -73,6 +73,7 @@ function renderGuess(scenario) {
     const box = el("div", { className: "guess" });
     if (scenario.kind === "number") {
         const select = el("select", { id: "guess" });
+        select.dataset.focus = "guess";
         select.append(el("option", { value: "", textContent: "choose…", disabled: true, selected: !guesses.has(scenario.id) }));
         for (const n of scenario.values) {
             select.append(el("option", { value: String(n), textContent: String(n), selected: guesses.get(scenario.id) === n }));
@@ -94,6 +95,7 @@ function renderGuess(scenario) {
     const checks = el("div", { className: "checks" });
     for (const option of scenario.values) {
         const input = el("input", { type: "checkbox", checked: picked.has(option.id) });
+        input.dataset.focus = option.id;
         input.addEventListener("change", () => {
             const next = new Set(guesses.get(scenario.id) ?? []);
             if (input.checked) next.add(option.id);
@@ -224,6 +226,13 @@ function tableOf(scenario, results) {
 }
 
 function renderStage() {
+    // The stage is rebuilt on every change; put keyboard focus back where it was.
+    const focused = document.activeElement?.dataset?.focus;
+    drawStage();
+    if (focused) document.querySelector(`[data-focus="${focused}"]`)?.focus();
+}
+
+function drawStage() {
     const scenario = current;
     const results = answers.get(scenario.id) ?? new Map();
     const stage = $("stage");
